@@ -29,7 +29,12 @@ interface Manifest {
 }
 
 export async function validateCommand(path?: string): Promise<void> {
-  const manifestPath = path ?? join(process.cwd(), "radzor.manifest.json");
+  let manifestPath = path ?? join(process.cwd(), "radzor.manifest.json");
+
+  // If path is a directory, look for manifest inside it
+  if (existsSync(manifestPath) && (await import("node:fs")).statSync(manifestPath).isDirectory()) {
+    manifestPath = join(manifestPath, "radzor.manifest.json");
+  }
 
   heading("Validating manifest");
 
