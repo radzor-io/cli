@@ -1,6 +1,6 @@
 {
   "name": "radzor",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Add AI-ready components to your project. Like shadcn/ui, but for any component with a Radzor manifest.",
   "type": "module",
   "bin": {
@@ -11,7 +11,14 @@
     "dev": "tsc --watch",
     "prepublishOnly": "npm run build"
   },
-  "keywords": ["radzor", "components", "llm", "ai", "cli", "registry"],
+  "keywords": [
+    "radzor",
+    "components",
+    "llm",
+    "ai",
+    "cli",
+    "registry"
+  ],
   "author": "radzor-io",
   "license": "MIT",
   "repository": {

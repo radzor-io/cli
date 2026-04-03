@@ -4,13 +4,15 @@ import { Command } from "commander";
 import { initCommand } from "./commands/init.js";
 import { addCommand } from "./commands/add.js";
 import { listCommand } from "./commands/list.js";
+import { validateCommand } from "./commands/validate.js";
+import { createCommand } from "./commands/create.js";
 
 const program = new Command();
 
 program
   .name("radzor")
   .description("Add AI-ready components to your project")
-  .version("0.1.0");
+  .version("0.1.1");
 
 program
   .command("init")
@@ -29,5 +31,17 @@ program
   .command("list")
   .description("List all available components")
   .action(listCommand);
+
+program
+  .command("validate [path]")
+  .description("Validate a radzor.manifest.json file")
+  .action(validateCommand);
+
+program
+  .command("create <name>")
+  .description("Scaffold a new component (e.g. radzor create @myorg/my-component)")
+  .option("-c, --category <category>", "Component category", "other")
+  .option("-d, --dir <path>", "Override output directory")
+  .action(createCommand);
 
 program.parse();
