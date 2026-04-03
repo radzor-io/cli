@@ -44,6 +44,22 @@ Downloads a component and adds it to your project.
 ### `radzor list`
 Lists all available components from the registry.
 
+### `radzor create <name>`
+Scaffolds a new component with manifest, source, and LLM docs.
+
+```bash
+npx radzor create @radzor/my-component -c networking
+```
+
+### `radzor validate [path]`
+Validates a component manifest against the RCS spec.
+
+```bash
+npx radzor validate .                    # Current directory
+npx radzor validate my-component         # Component directory
+npx radzor validate radzor.manifest.json # Manifest file
+```
+
 ## LLM-Native Workflow
 
 Components include a `radzor.manifest.json` that describes everything an LLM needs to integrate them:
