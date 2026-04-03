@@ -71,9 +71,8 @@ async function collectFiles(dirPath: string, files: ComponentFile[]): Promise<vo
   const entries: GitHubFile[] = await res.json();
 
   for (const entry of entries) {
-    // Skip the manifest (we handle it separately) and llm docs
+    // Skip the manifest (we handle it separately)
     if (entry.name === "radzor.manifest.json") continue;
-    if (entry.path.includes("/llm/")) continue;
 
     if (entry.type === "dir") {
       await collectFiles(entry.path, files);
