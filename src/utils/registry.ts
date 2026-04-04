@@ -9,6 +9,27 @@ interface GitHubFile {
   download_url: string | null;
 }
 
+export interface ManifestParameter {
+  name: string;
+  type: string;
+  description: string;
+  default?: unknown;
+  required?: boolean;
+}
+
+export interface ManifestEvent {
+  name: string;
+  description: string;
+  payload?: Record<string, string>;
+}
+
+export interface ManifestAction {
+  name: string;
+  description: string;
+  params?: ManifestParameter[];
+  returns?: string;
+}
+
 export interface ComponentManifest {
   radzor: string;
   name: string;
@@ -19,8 +40,24 @@ export interface ComponentManifest {
   languages: string[];
   category: string;
   tags: string[];
+  inputs?: ManifestParameter[];
+  outputs?: ManifestParameter[];
+  events?: ManifestEvent[];
+  actions?: ManifestAction[];
   dependencies?: {
     packages?: Record<string, string>;
+    radzor?: string[];
+  };
+  composability?: {
+    connectsTo?: Array<{
+      output: string;
+      compatibleWith: string[];
+    }>;
+  };
+  llm?: {
+    integrationPrompt?: string;
+    usageExamples?: string;
+    constraints?: string;
   };
 }
 
