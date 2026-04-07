@@ -12,20 +12,24 @@ export async function addCommand(
   opts: { dir?: string; deps?: boolean }
 ): Promise<void> {
   const installDeps = opts.deps !== false;
+  const manifests: Array<Record<string, any>> = [];
 
   for (const component of components) {
-    await addSingleComponent(component, opts.dir, installDeps);
+    const manifest = await addSingleComponent(component, opts.dir, installDeps);
+    if (manifest) manifests.push(manifest);
   }
 
-  // Check tsconfig.json for common pitfalls
+  // Post-install checks
   await checkTsConfig(opts.dir);
+  checkRuntimeMix(manifests);
+  await checkModuleFormat();
 }
 
 async function addSingleComponent(
   component: string,
   dirOverride: string | undefined,
   installDeps: boolean
-): Promise<void> {
+): Promise<Record<string, any> | null> {
 
   // Auto-init if no config
   if (!configExists()) {
@@ -123,6 +127,8 @@ async function addSingleComponent(
   console.log("");
   info(`Done! Component added to ${targetDir}/${component}/`);
   step(`Import with: import { ${getMainExport(manifest.name)} } from "./${targetDir}/${component}/src/index.js"`);
+
+  return manifest;
 }
 
 function detectPackageManager(): "npm" | "yarn" | "pnpm" {
@@ -177,5 +183,56 @@ async function checkTsConfig(dirOverride?: string): Promise<void> {
     }
   } catch {
     // tsconfig parse failed — not our problem
+  }
+}
+
+function checkRuntimeMix(manifests: Array<Record<string, any>>): void {
+  const runtimes = new Set(manifests.map((m) => m.runtime ?? "server"));
+  if (runtimes.has("browser") && runtimes.has("server")) {
+    const browserComps = manifests.filter((m) => m.runtime === "browser").map((m) => m.name);
+    const serverComps = manifests.filter((m) => (m.runtime ?? "server") === "server").map((m) => m.name);
+    console.log("");
+    warn("You're mixing browser and server components:");
+    step(`  Browser: ${browserComps.join(", ")}`);
+    step(`  Server:  ${serverComps.join(", ")}`);
+    step("These cannot run in the same process. You'll need an HTTP or WebSocket bridge.");
+    step("See the integration.md of your browser component for bridge patterns.");
+  }
+}
+
+async function checkModuleFormat(): Promise<void> {
+  const pkgPath = join(process.cwd(), "package.json");
+  if (!existsSync(pkgPath)) return;
+
+  try {
+    const pkg = JSON.parse(await readFile(pkgPath, "utf8"));
+    const isESM = pkg.type === "module";
+
+    // Check tsconfig module setting if it exists
+    const tsconfigPath = join(process.cwd(), "tsconfig.json");
+    if (!existsSync(tsconfigPath)) return;
+
+    const raw = await readFile(tsconfigPath, "utf8");
+    const stripped = raw.replace(/\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
+    const tsconfig = JSON.parse(stripped);
+    const moduleOpt = (tsconfig.compilerOptions?.module ?? "").toLowerCase();
+
+    if (isESM && moduleOpt && (moduleOpt === "commonjs" || moduleOpt === "commonjs2")) {
+      console.log("");
+      warn("package.json has \"type\": \"module\" (ESM) but tsconfig.json uses \"module\": \"" + tsconfig.compilerOptions.module + "\" (CJS).");
+      step("This will cause 'exports is not defined' at runtime. Fix options:");
+      step("  1. Set \"module\": \"nodenext\" in tsconfig.json compilerOptions");
+      step("  2. Or remove \"type\": \"module\" from package.json");
+    }
+
+    if (!isESM && moduleOpt && (moduleOpt.includes("nodenext") || moduleOpt.includes("esnext") || moduleOpt === "es2022")) {
+      console.log("");
+      warn("tsconfig.json uses ESM module format (\"" + tsconfig.compilerOptions.module + "\") but package.json has no \"type\": \"module\".");
+      step("Node.js will treat .js files as CJS. Fix options:");
+      step("  1. Add \"type\": \"module\" to package.json");
+      step("  2. Or set \"module\": \"commonjs\" in tsconfig.json");
+    }
+  } catch {
+    // parse failed — skip
   }
 }
