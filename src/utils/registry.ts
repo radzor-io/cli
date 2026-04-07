@@ -37,6 +37,7 @@ export interface ComponentManifest {
   version: string;
   latestVersion?: string;
   description: string;
+  runtime?: "server" | "browser" | "universal";
   languages: string[];
   category: string;
   tags: string[];
