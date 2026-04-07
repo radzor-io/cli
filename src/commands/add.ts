@@ -12,23 +12,56 @@ export async function addCommand(
   opts: { dir?: string; deps?: boolean }
 ): Promise<void> {
   const installDeps = opts.deps !== false;
-  const manifests: Array<Record<string, any>> = [];
+
+  // ── Pre-fetch manifests to check runtime mix BEFORE downloading ──
+  step("Fetching manifests...");
+  const prefetchedManifests: Array<{ name: string; manifest: Record<string, any> }> = [];
 
   for (const component of components) {
-    const manifest = await addSingleComponent(component, opts.dir, installDeps);
-    if (manifest) manifests.push(manifest);
+    try {
+      const manifest = await fetchManifest(component);
+      prefetchedManifests.push({ name: component, manifest });
+    } catch {
+      error(`Component "${component}" not found in the registry.`);
+      step("Run `radzor list` to see available components.");
+      process.exit(1);
+    }
+  }
+
+  // ── Check runtime mix before installing anything ──
+  if (prefetchedManifests.length > 1) {
+    const runtimes = new Set(prefetchedManifests.map((p) => p.manifest.runtime ?? "server"));
+    if (runtimes.has("browser") && runtimes.has("server")) {
+      const browserComps = prefetchedManifests.filter((p) => p.manifest.runtime === "browser").map((p) => p.manifest.name);
+      const serverComps = prefetchedManifests.filter((p) => (p.manifest.runtime ?? "server") === "server").map((p) => p.manifest.name);
+      console.log("");
+      warn("⚠ Runtime mix detected BEFORE install:");
+      step(`  Browser: ${browserComps.join(", ")}`);
+      step(`  Server:  ${serverComps.join(", ")}`);
+      step("These cannot run in the same process — you'll need an HTTP or WebSocket bridge.");
+      step("See the browser component's integration.md for bridge patterns.");
+      console.log("");
+    }
+  }
+
+  // ── Install components ──
+  const manifests: Array<Record<string, any>> = [];
+
+  for (const { name, manifest } of prefetchedManifests) {
+    const result = await addSingleComponent(name, opts.dir, installDeps, manifest);
+    if (result) manifests.push(result);
   }
 
   // Post-install checks
   await checkTsConfig(opts.dir);
-  checkRuntimeMix(manifests);
   await checkModuleFormat();
 }
 
 async function addSingleComponent(
   component: string,
   dirOverride: string | undefined,
-  installDeps: boolean
+  installDeps: boolean,
+  prefetchedManifest?: Record<string, any>
 ): Promise<Record<string, any> | null> {
 
   // Auto-init if no config
@@ -47,15 +80,19 @@ async function addSingleComponent(
 
   heading(`Adding ${component}`);
 
-  // 1. Fetch manifest
-  step("Fetching manifest...");
+  // 1. Fetch manifest (use pre-fetched if available)
   let manifest;
-  try {
-    manifest = await fetchManifest(component);
-  } catch {
-    error(`Component "${component}" not found in the registry.`);
-    step("Run `radzor list` to see available components.");
-    process.exit(1);
+  if (prefetchedManifest) {
+    manifest = prefetchedManifest;
+  } else {
+    step("Fetching manifest...");
+    try {
+      manifest = await fetchManifest(component);
+    } catch {
+      error(`Component "${component}" not found in the registry.`);
+      step("Run `radzor list` to see available components.");
+      process.exit(1);
+    }
   }
 
   info(`${manifest.name}@${manifest.version} — ${manifest.description}`);
@@ -128,14 +165,12 @@ async function addSingleComponent(
   info(`Done! Component added to ${targetDir}/${component}/`);
   step(`Import with: import { ${getMainExport(manifest.name)} } from "./${targetDir}/${component}/src/index.js"`);
 
-  // 8. Show required env vars from constraints
-  const constraints = manifest.llm?.constraints ?? "";
-  const envVarPattern = /[A-Z][A-Z0-9_]{2,}_(?:KEY|SECRET|TOKEN|URL|ID|PASSWORD|CREDENTIALS)/g;
-  const envVars = constraints.match(envVarPattern);
-  if (envVars && envVars.length > 0) {
-    step("Required environment variables:");
-    for (const v of [...new Set(envVars)]) {
-      step(`  ${v}=...`);
+  // 8. Show required env vars from manifest inputs
+  const envVarInputs = (manifest.inputs ?? []).filter((i: Record<string, any>) => i.envVar);
+  if (envVarInputs.length > 0) {
+    step("Environment variables:");
+    for (const inp of envVarInputs) {
+      step(`  ${inp.envVar}=... (${inp.name})`);
     }
   }
 
@@ -210,20 +245,6 @@ async function checkTsConfig(dirOverride?: string): Promise<void> {
     }
   } catch {
     // tsconfig parse failed — not our problem
-  }
-}
-
-function checkRuntimeMix(manifests: Array<Record<string, any>>): void {
-  const runtimes = new Set(manifests.map((m) => m.runtime ?? "server"));
-  if (runtimes.has("browser") && runtimes.has("server")) {
-    const browserComps = manifests.filter((m) => m.runtime === "browser").map((m) => m.name);
-    const serverComps = manifests.filter((m) => (m.runtime ?? "server") === "server").map((m) => m.name);
-    console.log("");
-    warn("You're mixing browser and server components:");
-    step(`  Browser: ${browserComps.join(", ")}`);
-    step(`  Server:  ${serverComps.join(", ")}`);
-    step("These cannot run in the same process. You'll need an HTTP or WebSocket bridge.");
-    step("See the integration.md of your browser component for bridge patterns.");
   }
 }
 
