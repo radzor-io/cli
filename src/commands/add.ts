@@ -8,23 +8,34 @@ import { addToRegistry } from "../utils/project-registry.js";
 import { info, warn, error, step, heading } from "../utils/logger.js";
 
 export async function addCommand(
-  component: string,
+  components: string[],
   opts: { dir?: string; deps?: boolean }
 ): Promise<void> {
   const installDeps = opts.deps !== false;
+
+  for (const component of components) {
+    await addSingleComponent(component, opts.dir, installDeps);
+  }
+}
+
+async function addSingleComponent(
+  component: string,
+  dirOverride: string | undefined,
+  installDeps: boolean
+): Promise<void> {
 
   // Auto-init if no config
   if (!configExists()) {
     await writeConfig({
       $schema: "https://radzor.io/schema/config",
-      componentDir: opts.dir ?? "components/radzor",
+      componentDir: dirOverride ?? "components/radzor",
       registry: "https://radzor.io",
     });
     step("Auto-created radzor.json");
   }
 
   const config = await readConfig();
-  const targetDir = opts.dir ?? config.componentDir;
+  const targetDir = dirOverride ?? config.componentDir;
   const componentDir = join(process.cwd(), targetDir, component);
 
   heading(`Adding ${component}`);

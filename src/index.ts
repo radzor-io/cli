@@ -22,8 +22,9 @@ program
   .action(initCommand);
 
 program
-  .command("add <component>")
-  .description("Add a component to your project")
+  .command("add")
+  .argument("<components...>", "One or more component names")
+  .description("Add components to your project")
   .option("-d, --dir <path>", "Override target directory")
   .option("--no-deps", "Skip installing dependencies")
   .action(addCommand);
