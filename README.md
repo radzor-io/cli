@@ -6,13 +6,13 @@ CLI to add AI-ready components to your project. Like shadcn/ui, but for any comp
 
 ```bash
 # List available components
-npx radzor list
+npx radzor@latest list
 
 # Add a component to your project
-npx radzor add audio-capture
+npx radzor@latest add audio-capture
 
 # Initialize with custom directory
-npx radzor init --dir src/components/radzor
+npx radzor@latest init --dir src/components/radzor
 ```
 
 ## What happens when you run `radzor add`
@@ -48,16 +48,16 @@ Lists all available components from the registry.
 Scaffolds a new component with manifest, source, and LLM docs.
 
 ```bash
-npx radzor create @radzor/my-component -c networking
+npx radzor@latest create @radzor/my-component -c networking
 ```
 
 ### `radzor validate [path]`
 Validates a component manifest against the RCS spec.
 
 ```bash
-npx radzor validate .                    # Current directory
-npx radzor validate my-component         # Component directory
-npx radzor validate radzor.manifest.json # Manifest file
+npx radzor@latest validate .                    # Current directory
+npx radzor@latest validate my-component         # Component directory
+npx radzor@latest validate radzor.manifest.json # Manifest file
 ```
 
 ## LLM-Native Workflow

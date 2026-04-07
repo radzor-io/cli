@@ -27,8 +27,8 @@ This project uses [Radzor](https://radzor.io) components — AI-ready building b
 - Respect the \`composability.connectsTo\` field when wiring components together
 - Use the types defined in \`outputs\` and \`inputs\` — do not invent custom interfaces
 - Event names follow the pattern \`onEventName\` — do not rename them
-- When the user asks to add a new component, run \`npx radzor add <name>\`
-- Browse available components at https://radzor.io/components or run \`npx radzor list\`
+- When the user asks to add a new component, run \`npx radzor@latest add <name>\`
+- Browse available components at https://radzor.io/components or run \`npx radzor@latest list\`
 `.trim();
 }
 
