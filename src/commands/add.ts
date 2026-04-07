@@ -2,6 +2,7 @@ import { mkdir, writeFile, readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { execSync } from "node:child_process";
+import { transform } from "esbuild";
 import { readConfig, configExists, writeConfig } from "../utils/config.js";
 import { fetchManifest, fetchComponentFiles } from "../utils/registry.js";
 import { addToRegistry } from "../utils/project-registry.js";
@@ -131,10 +132,33 @@ async function addSingleComponent(
 
   info(`Wrote ${files.length + 1} files to ${targetDir}/${component}/`);
 
-  // 5. Update project registry
+  // 5b. Transpile .ts → .js for browser components
+  const isBrowser = (manifest.runtime ?? "server") === "browser";
+  if (isBrowser) {
+    step("Browser runtime detected — transpiling .ts → .js...");
+    const tsFiles = files.filter((f) => f.path.endsWith(".ts") && !f.path.endsWith(".d.ts"));
+    for (const file of tsFiles) {
+      const filePath = join(componentDir, file.path);
+      const outPath = filePath.replace(/\.ts$/, ".js");
+      try {
+        const result = await transform(file.content, {
+          loader: "ts",
+          format: "esm",
+          target: "es2022",
+        });
+        await writeFile(outPath, result.code);
+        step(`  ${targetDir}/${component}/${file.path.replace(/\.ts$/, ".js")}`);
+      } catch (err) {
+        warn(`Failed to transpile ${file.path}: ${(err as Error).message}`);
+      }
+    }
+    info("Browser-ready .js files emitted alongside .ts sources");
+  }
+
+  // 6. Update project registry
   await addToRegistry(manifest, targetDir, component);
 
-  // 6. Install dependencies
+  // 7. Install dependencies
   const packages = manifest.dependencies?.packages;
   if (installDeps && packages && Object.keys(packages).length > 0) {
     const deps = Object.entries(packages)
@@ -160,12 +184,12 @@ async function addSingleComponent(
     }
   }
 
-  // 7. Summary
+  // 8. Summary
   console.log("");
   info(`Done! Component added to ${targetDir}/${component}/`);
   step(`Import with: import { ${getMainExport(manifest.name)} } from "./${targetDir}/${component}/src/index.js"`);
 
-  // 8. Show required env vars from manifest inputs
+  // 9. Show required env vars from manifest inputs
   const envVarInputs = (manifest.inputs ?? []).filter((i: Record<string, any>) => i.envVar);
   if (envVarInputs.length > 0) {
     step("Environment variables:");
@@ -174,7 +198,7 @@ async function addSingleComponent(
     }
   }
 
-  // 9. Suggest connected components
+  // 10. Suggest connected components
   const connections = manifest.composability?.connectsTo ?? [];
   if (connections.length > 0) {
     const targets = connections

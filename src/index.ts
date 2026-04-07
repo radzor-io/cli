@@ -6,6 +6,7 @@ import { addCommand } from "./commands/add.js";
 import { listCommand } from "./commands/list.js";
 import { validateCommand } from "./commands/validate.js";
 import { createCommand } from "./commands/create.js";
+import { graphCommand } from "./commands/graph.js";
 
 const program = new Command();
 
@@ -45,5 +46,11 @@ program
   .option("-c, --category <category>", "Component category", "other")
   .option("-d, --dir <path>", "Override output directory")
   .action(createCommand);
+
+program
+  .command("graph")
+  .description("Display the data-flow graph of installed components")
+  .option("--mermaid", "Output as Mermaid diagram syntax")
+  .action(graphCommand);
 
 program.parse();
