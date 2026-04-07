@@ -1,6 +1,6 @@
 {
   "name": "radzor",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Add AI-ready components to your project. Like shadcn/ui, but for any component with a Radzor manifest.",
   "type": "module",
   "bin": {
