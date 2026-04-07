@@ -128,6 +128,30 @@ async function addSingleComponent(
   info(`Done! Component added to ${targetDir}/${component}/`);
   step(`Import with: import { ${getMainExport(manifest.name)} } from "./${targetDir}/${component}/src/index.js"`);
 
+  // 8. Show required env vars from constraints
+  const constraints = manifest.llm?.constraints ?? "";
+  const envVarPattern = /[A-Z][A-Z0-9_]{2,}_(?:KEY|SECRET|TOKEN|URL|ID|PASSWORD|CREDENTIALS)/g;
+  const envVars = constraints.match(envVarPattern);
+  if (envVars && envVars.length > 0) {
+    step("Required environment variables:");
+    for (const v of [...new Set(envVars)]) {
+      step(`  ${v}=...`);
+    }
+  }
+
+  // 9. Suggest connected components
+  const connections = manifest.composability?.connectsTo ?? [];
+  if (connections.length > 0) {
+    const targets = connections
+      .flatMap((c: Record<string, unknown>) => (c.compatibleWith as string[]) ?? [])
+      .map((ref: string) => ref.match(/@radzor\/([^.]+)/)?.[1])
+      .filter((s: string | undefined): s is string => !!s);
+    const unique = [...new Set(targets)];
+    if (unique.length > 0) {
+      step(`Connects to: ${unique.map((s) => `@radzor/${s}`).join(", ")}`);
+    }
+  }
+
   return manifest;
 }
 
@@ -137,12 +161,15 @@ function detectPackageManager(): "npm" | "yarn" | "pnpm" {
   return "npm";
 }
 
+const ACRONYMS = new Set(["llm", "api", "csv", "http", "ocr", "pdf", "qr", "sms", "tts", "stt", "ws"]);
+
 function getMainExport(name: string): string {
   // @radzor/audio-capture → AudioCapture
+  // @radzor/llm-completion → LLMCompletion
   const short = name.replace(/^@radzor\//, "");
   return short
     .split("-")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .map((w) => ACRONYMS.has(w) ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1))
     .join("");
 }
 
