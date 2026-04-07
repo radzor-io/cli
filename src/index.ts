@@ -18,6 +18,7 @@ program
   .command("init")
   .description("Initialize Radzor in your project")
   .option("-d, --dir <path>", "Target directory for components", "components/radzor")
+  .option("--no-rules", "Skip generating AI agent context files")
   .action(initCommand);
 
 program

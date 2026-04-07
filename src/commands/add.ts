@@ -4,6 +4,7 @@ import { join, dirname } from "node:path";
 import { execSync } from "node:child_process";
 import { readConfig, configExists, writeConfig } from "../utils/config.js";
 import { fetchManifest, fetchComponentFiles } from "../utils/registry.js";
+import { addToRegistry } from "../utils/project-registry.js";
 import { info, warn, error, step, heading } from "../utils/logger.js";
 
 export async function addCommand(
@@ -75,7 +76,10 @@ export async function addCommand(
 
   info(`Wrote ${files.length + 1} files to ${targetDir}/${component}/`);
 
-  // 5. Install dependencies
+  // 5. Update project registry
+  await addToRegistry(manifest, targetDir, component);
+
+  // 6. Install dependencies
   const packages = manifest.dependencies?.packages;
   if (installDeps && packages && Object.keys(packages).length > 0) {
     const deps = Object.entries(packages)
@@ -101,7 +105,7 @@ export async function addCommand(
     }
   }
 
-  // 6. Summary
+  // 7. Summary
   console.log("");
   info(`Done! Component added to ${targetDir}/${component}/`);
   step(`Import with: import { ${getMainExport(manifest.name)} } from "./${targetDir}/${component}/src/index.js"`);
