@@ -1,7 +1,7 @@
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join, dirname } from "node:path";
-import { info, step, warn } from "./logger.js";
+import { info, step } from "./logger.js";
 
 const START_MARKER = "<!-- radzor:start -->";
 const END_MARKER = "<!-- radzor:end -->";

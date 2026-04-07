@@ -1,7 +1,7 @@
 import { readFile, writeFile, readdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import { info, step, warn } from "./logger.js";
+import { info, step } from "./logger.js";
 
 export const REGISTRY_FILENAME = "radzor.registry.json";
 
