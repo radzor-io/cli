@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, writeFile, readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { execSync } from "node:child_process";
@@ -16,6 +16,9 @@ export async function addCommand(
   for (const component of components) {
     await addSingleComponent(component, opts.dir, installDeps);
   }
+
+  // Check tsconfig.json for common pitfalls
+  await checkTsConfig(opts.dir);
 }
 
 async function addSingleComponent(
@@ -135,4 +138,44 @@ function getMainExport(name: string): string {
     .split("-")
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join("");
+}
+
+async function checkTsConfig(dirOverride?: string): Promise<void> {
+  const tsconfigPath = join(process.cwd(), "tsconfig.json");
+  if (!existsSync(tsconfigPath)) return;
+
+  try {
+    // Strip single-line comments for JSON.parse
+    const raw = await readFile(tsconfigPath, "utf8");
+    const stripped = raw.replace(/\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
+    const tsconfig = JSON.parse(stripped);
+    const opts = tsconfig.compilerOptions ?? {};
+    const componentDir = dirOverride ?? "components/radzor";
+
+    // Check rootDir conflict
+    if (opts.rootDir && opts.rootDir !== ".") {
+      const isUnder = componentDir.startsWith(opts.rootDir);
+      if (!isUnder) {
+        console.log("");
+        warn("tsconfig.json has rootDir set to \"" + opts.rootDir + "\" but components are in \"" + componentDir + "/\".");
+        step("This will cause TS6059 errors. Fix options:");
+        step("  1. Set \"rootDir\": \".\" in tsconfig.json");
+        step("  2. Add \"" + componentDir + "\" to the \"include\" array and adjust rootDir");
+        step("  3. Use a path alias: \"paths\": { \"@radzor/*\": [\"" + componentDir + "/*/src/index.ts\"] }");
+      }
+    }
+
+    // Check if components dir is excluded
+    const exclude: string[] = tsconfig.exclude ?? [];
+    const isExcluded = exclude.some(
+      (p: string) => componentDir.startsWith(p) || p === componentDir
+    );
+    if (isExcluded) {
+      console.log("");
+      warn("\"" + componentDir + "/\" is in tsconfig.json \"exclude\". Components won't compile.");
+      step("Remove it from \"exclude\" or use path aliases to import compiled outputs.");
+    }
+  } catch {
+    // tsconfig parse failed — not our problem
+  }
 }
