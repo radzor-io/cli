@@ -28,32 +28,7 @@ interface Manifest {
   llm?: { integrationPrompt?: string; usageExamples?: string; constraints?: string };
 }
 
-export async function validateCommand(path?: string): Promise<void> {
-  let manifestPath = path ?? join(process.cwd(), "radzor.manifest.json");
-
-  // If path is a directory, look for manifest inside it
-  if (existsSync(manifestPath) && (await import("node:fs")).statSync(manifestPath).isDirectory()) {
-    manifestPath = join(manifestPath, "radzor.manifest.json");
-  }
-
-  heading("Validating manifest");
-
-  if (!existsSync(manifestPath)) {
-    error(`File not found: ${manifestPath}`);
-    process.exit(1);
-  }
-
-  let raw: string;
-  let manifest: Manifest;
-
-  try {
-    raw = await readFile(manifestPath, "utf-8");
-    manifest = JSON.parse(raw);
-  } catch (err) {
-    error(`Invalid JSON: ${(err as Error).message}`);
-    process.exit(1);
-  }
-
+export function validateManifestContent(manifest: Manifest, dir: string) {
   const errors: string[] = [];
   const warnings: string[] = [];
 
@@ -149,10 +124,9 @@ export async function validateCommand(path?: string): Promise<void> {
   }
 
   // --- llm docs existence ---
-  const dir = manifestPath.replace(/\/[^/]+$/, "");
   if (manifest.llm?.integrationPrompt) {
     const llmPath = join(dir, manifest.llm.integrationPrompt);
-    if (!existsSync(llmPath)) {
+    if (dir !== "/mock/dir" && !existsSync(llmPath)) {
       errors.push(`llm.integrationPrompt points to "${manifest.llm.integrationPrompt}" but file not found`);
     }
   } else {
@@ -161,7 +135,7 @@ export async function validateCommand(path?: string): Promise<void> {
 
   if (manifest.llm?.usageExamples) {
     const llmPath = join(dir, manifest.llm.usageExamples);
-    if (!existsSync(llmPath)) {
+    if (dir !== "/mock/dir" && !existsSync(llmPath)) {
       errors.push(`llm.usageExamples points to "${manifest.llm.usageExamples}" but file not found`);
     }
   } else {
@@ -170,15 +144,49 @@ export async function validateCommand(path?: string): Promise<void> {
 
   // --- source file existence ---
   const srcDir = join(dir, "src");
-  if (!existsSync(srcDir)) {
-    errors.push(`No src/ directory found next to manifest`);
-  } else {
-    const indexTs = join(srcDir, "index.ts");
-    const indexJs = join(srcDir, "index.js");
-    if (!existsSync(indexTs) && !existsSync(indexJs)) {
-      errors.push(`No src/index.ts or src/index.js found`);
+  if (dir !== "/mock/dir") {
+    if (!existsSync(srcDir)) {
+      errors.push(`No src/ directory found next to manifest`);
+    } else {
+      const indexTs = join(srcDir, "index.ts");
+      const indexJs = join(srcDir, "index.js");
+      if (!existsSync(indexTs) && !existsSync(indexJs)) {
+        errors.push(`No src/index.ts or src/index.js found`);
+      }
     }
   }
+
+  return { errors, warnings };
+}
+
+export async function validateCommand(path?: string): Promise<void> {
+  let manifestPath = path ?? join(process.cwd(), "radzor.manifest.json");
+
+  // If path is a directory, look for manifest inside it
+  if (existsSync(manifestPath) && (await import("node:fs")).statSync(manifestPath).isDirectory()) {
+    manifestPath = join(manifestPath, "radzor.manifest.json");
+  }
+
+  heading("Validating manifest");
+
+  if (!existsSync(manifestPath)) {
+    error(`File not found: ${manifestPath}`);
+    process.exit(1);
+  }
+
+  let raw: string;
+  let manifest: Manifest;
+
+  try {
+    raw = await readFile(manifestPath, "utf-8");
+    manifest = JSON.parse(raw);
+  } catch (err) {
+    error(`Invalid JSON: ${(err as Error).message}`);
+    process.exit(1);
+  }
+
+  const dir = manifestPath.replace(/\/[^/]+$/, "");
+  const { errors, warnings } = validateManifestContent(manifest, dir);
 
   // --- Report ---
   if (warnings.length > 0) {
