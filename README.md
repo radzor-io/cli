@@ -1,6 +1,8 @@
 # radzor
 
-CLI to add AI-ready components to your project. Like shadcn/ui, but for any component with a [Radzor manifest](https://github.com/radzor-io/spec).
+The CLI for the **Radzor Platform**. 
+
+Radzor is like *shadcn/ui*, but for **backend logic, APIs, and AI integrations**. It downloads high-quality, fully-typed code directly into your project, accompanied by a `radzor.manifest.json` designed specifically to help your AI agents (Claude, Copilot, Cursor) integrate the code flawlessly.
 
 ## Usage
 
@@ -11,71 +13,44 @@ npx radzor@latest list
 # Add a component to your project
 npx radzor@latest add audio-capture
 
-# Initialize with custom directory
-npx radzor@latest init --dir src/components/radzor
+# Scaffold a full AI Workflow (Recipe)
+npx radzor@latest recipe add voice-bot
 ```
 
 ## What happens when you run `radzor add`
 
 1. Fetches the component source from the [Radzor registry](https://radzor.io)
 2. Copies the source code into your project (default: `components/radzor/<name>/`)
-3. Includes the `radzor.manifest.json` — so your LLM can read it
+3. Includes the `radzor.manifest.json` and LLM documentation (`llm/integration.md`)
 4. Installs npm dependencies declared in the manifest
+5. Auto-updates your `.env` file with required API keys
 
 The code is **local, modifiable, and readable by your LLM**. No black-box packages.
 
 ## Commands
 
-### `radzor init`
-Creates a `radzor.json` config file in your project root.
-
-| Option | Default | Description |
-|--------|---------|-------------|
-| `-d, --dir <path>` | `components/radzor` | Directory where components will be added |
-
 ### `radzor add <component>`
 Downloads a component and adds it to your project.
+- `--no-deps`: Skip installing npm dependencies
+- `-d, --dir <path>`: Override target directory
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| `-d, --dir <path>` | from `radzor.json` | Override target directory |
-| `--no-deps` | — | Skip installing npm dependencies |
+### `radzor recipe add <slug>`
+Scaffolds a complete AI workflow by installing multiple components and generating the "wiring" code to connect them.
+
+### `radzor diff <component>`
+Shows the differences between your local component code and the latest version in the Radzor registry. Perfect for tracking updates while keeping your local modifications safe.
+
+### `radzor update <component>`
+Overwrites your local component with the latest version from the registry.
 
 ### `radzor list`
 Lists all available components from the registry.
 
-### `radzor create <name>`
-Scaffolds a new component with manifest, source, and LLM docs.
-
-```bash
-npx radzor@latest create @radzor/my-component -c networking
-```
-
 ### `radzor validate [path]`
-Validates a component manifest against the RCS spec.
+Validates a `radzor.manifest.json` against the official Radzor Component Spec (RCS) schema. Use this before submitting a new component to the registry.
 
-```bash
-npx radzor@latest validate .                    # Current directory
-npx radzor@latest validate my-component         # Component directory
-npx radzor@latest validate radzor.manifest.json # Manifest file
-```
-
-## LLM-Native Workflow
-
-Components include a `radzor.manifest.json` that describes everything an LLM needs to integrate them:
-
-```
-"Use the radzor.manifest.json in components/radzor/audio-capture/ to add
-audio recording to my app."
-```
-
-The manifest contains inputs, outputs, actions, events, and composability — so the LLM can generate correct integration code without reading the full source.
-
-## Links
-
-- [Radzor Platform](https://radzor.io)
-- [Component Registry](https://github.com/radzor-io/components)
-- [RCS Specification](https://github.com/radzor-io/spec)
+### `radzor create <name>`
+Scaffolds a new component boilerplate with a valid manifest, source directory, and LLM docs template.
 
 ## License
 
