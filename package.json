@@ -4,7 +4,7 @@
   "description": "Add AI-ready components to your project. Like shadcn/ui, but for any component with a Radzor manifest.",
   "type": "module",
   "bin": {
-    "radzor": "./dist/index.js"
+    "radzor": "dist/index.js"
   },
   "scripts": {
     "build": "tsc",
