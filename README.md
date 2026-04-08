@@ -1,8 +1,8 @@
 # radzor
 
-The CLI for the **Radzor Platform**. 
+CLI for the Radzor platform. 
 
-Radzor is like *shadcn/ui*, but for **backend logic, APIs, and AI integrations**. It downloads high-quality, fully-typed code directly into your project, accompanied by a `radzor.manifest.json` designed specifically to help your AI agents (Claude, Copilot, Cursor) integrate the code flawlessly.
+Radzor provides copy-paste backend logic, APIs, and AI integrations. It downloads fully-typed code directly into your project, accompanied by a `radzor.manifest.json` designed to help AI agents (Claude, Copilot, Cursor) integrate the code correctly.
 
 ## Usage
 
@@ -25,7 +25,7 @@ npx radzor@latest recipe add voice-bot
 4. Installs npm dependencies declared in the manifest
 5. Auto-updates your `.env` file with required API keys
 
-The code is **local, modifiable, and readable by your LLM**. No black-box packages.
+The code is local, modifiable, and readable by your LLM. No black-box packages.
 
 ## Commands
 
@@ -35,10 +35,10 @@ Downloads a component and adds it to your project.
 - `-d, --dir <path>`: Override target directory
 
 ### `radzor recipe add <slug>`
-Scaffolds a complete AI workflow by installing multiple components and generating the "wiring" code to connect them.
+Scaffolds a complete AI workflow by installing multiple components and generating the wiring code to connect them.
 
 ### `radzor diff <component>`
-Shows the differences between your local component code and the latest version in the Radzor registry. Perfect for tracking updates while keeping your local modifications safe.
+Shows the differences between your local component code and the latest version in the Radzor registry. Helps track updates while keeping local modifications safe.
 
 ### `radzor update <component>`
 Overwrites your local component with the latest version from the registry.
