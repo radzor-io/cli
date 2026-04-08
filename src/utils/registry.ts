@@ -1,6 +1,6 @@
 const GITHUB_RAW = "https://raw.githubusercontent.com/radzor-io/components/main";
 const GITHUB_API = "https://api.github.com/repos/radzor-io/components/contents";
-const REGISTRY_API = "https://radzor.io/api";
+export const REGISTRY_API = "https://radzor.io/api";
 
 interface GitHubFile {
   name: string;

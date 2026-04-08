@@ -174,7 +174,9 @@ async function addSingleComponent(
           ? `yarn add ${deps}`
           : packageManager === "pnpm"
             ? `pnpm add ${deps}`
-            : `npm install ${deps}`;
+            : packageManager === "bun"
+              ? `bun add ${deps}`
+              : `npm install ${deps}`;
 
       execSync(installCmd, { stdio: "inherit" });
       info("Dependencies installed");
@@ -194,7 +196,28 @@ async function addSingleComponent(
   if (envVarInputs.length > 0) {
     step("Environment variables:");
     for (const inp of envVarInputs) {
-      step(`  ${inp.envVar}=... (${inp.name})`);
+      step(`    ${inp.envVar}=... (${inp.name})`);
+    }
+
+    try {
+      const envPath = join(process.cwd(), ".env");
+      let envContent = "";
+      if (existsSync(envPath)) {
+        envContent = await readFile(envPath, "utf-8");
+      }
+      
+      const missingVars = envVarInputs.filter(
+        (inp: Record<string, any>) => !envContent.match(new RegExp(`^${inp.envVar}=`, "m"))
+      );
+
+      if (missingVars.length > 0) {
+        const envAppends = missingVars.map((inp: Record<string, any>) => `${inp.envVar}= # Added by Radzor (@radzor/${component})`).join("\n");
+        const newContent = (envContent === "" || envContent.endsWith("\n") ? envContent : envContent + "\n") + envAppends + "\n";
+        await writeFile(envPath, newContent);
+        info(`Added ${missingVars.length} missing variable(s) to .env file`);
+      }
+    } catch {
+      warn("Could not automatically update .env file");
     }
   }
 
@@ -214,9 +237,10 @@ async function addSingleComponent(
   return manifest;
 }
 
-function detectPackageManager(): "npm" | "yarn" | "pnpm" {
+function detectPackageManager(): "npm" | "yarn" | "pnpm" | "bun" {
   if (existsSync(join(process.cwd(), "pnpm-lock.yaml"))) return "pnpm";
   if (existsSync(join(process.cwd(), "yarn.lock"))) return "yarn";
+  if (existsSync(join(process.cwd(), "bun.lockb")) || existsSync(join(process.cwd(), "bun.lock"))) return "bun";
   return "npm";
 }
 
