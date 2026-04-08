@@ -7,6 +7,10 @@ import { listCommand } from "./commands/list.js";
 import { validateCommand } from "./commands/validate.js";
 import { createCommand } from "./commands/create.js";
 import { graphCommand } from "./commands/graph.js";
+import { recipeCommand } from "./commands/recipe.js";
+
+import { diffCommand } from "./commands/diff.js";
+import { updateCommand } from "./commands/update.js";
 
 const program = new Command();
 
@@ -30,6 +34,16 @@ program
   .option("--no-deps", "Skip installing dependencies")
   .action(addCommand);
 
+const recipeGrp = program
+  .command("recipe")
+  .description("Manage and scaffold recipes");
+
+recipeGrp
+  .command("add <slug>")
+  .description("Install a recipe and its components")
+  .option("-d, --dir <path>", "Override target directory")
+  .action(recipeCommand);
+
 program
   .command("list")
   .description("List all available components")
@@ -52,5 +66,18 @@ program
   .description("Display the data-flow graph of installed components")
   .option("--mermaid", "Output as Mermaid diagram syntax")
   .action(graphCommand);
+
+program
+  .command("diff <component>")
+  .description("Show differences between local component and registry version")
+  .option("-d, --dir <path>", "Override target directory")
+  .action(diffCommand);
+
+program
+  .command("update <component>")
+  .description("Update an existing component to the latest registry version")
+  .option("-d, --dir <path>", "Override target directory")
+  .option("--no-deps", "Skip updating dependencies")
+  .action(updateCommand);
 
 program.parse();
