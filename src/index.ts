@@ -24,6 +24,7 @@ program
   .description("Initialize Radzor in your project")
   .option("-d, --dir <path>", "Target directory for components", "components/radzor")
   .option("--no-rules", "Skip generating AI agent context files")
+  .option("--no-mcp", "Skip generating MCP server config for IDEs")
   .action(initCommand);
 
 program

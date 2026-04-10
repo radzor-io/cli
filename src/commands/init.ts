@@ -1,10 +1,12 @@
 import { writeConfig, configExists, type RadzorConfig } from "../utils/config.js";
 import { writeAgentRules } from "../utils/agent-rules.js";
+import { writeMcpConfigs } from "../utils/mcp-config.js";
 import { rebuildRegistry } from "../utils/project-registry.js";
 import { info, warn, step } from "../utils/logger.js";
 
-export async function initCommand(opts: { dir: string; rules?: boolean }): Promise<void> {
+export async function initCommand(opts: { dir: string; rules?: boolean; mcp?: boolean }): Promise<void> {
   const skipRules = opts.rules === false;
+  const skipMcp = opts.mcp === false;
 
   if (configExists()) {
     warn("radzor.json already exists. Skipping config.");
@@ -22,6 +24,11 @@ export async function initCommand(opts: { dir: string; rules?: boolean }): Promi
   // Generate AI agent context files
   if (!skipRules) {
     await writeAgentRules(opts.dir);
+  }
+
+  // Configure MCP server for IDEs
+  if (!skipMcp) {
+    await writeMcpConfigs();
   }
 
   // Build project registry from installed components
